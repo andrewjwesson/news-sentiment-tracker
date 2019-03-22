@@ -1,0 +1,13 @@
+numpy
+scipy
+matplotlib
+seaborn
+pandas
+sklearn
+spacy
+textacy
+textblob
+gensim
+plotly
+cufflinks
+nbimporter
