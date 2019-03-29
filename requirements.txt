@@ -10,4 +10,5 @@ textblob
 gensim
 plotly
 cufflinks
+calmap
 nbimporter
