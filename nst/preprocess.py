@@ -21,8 +21,9 @@ class IdentifyNews:
         news = pd.read_csv(self.data_path, usecols=colnames, parse_dates=['date'])
         news['author'] = news['author'].str.strip()
         news = news.dropna(subset=['date', 'title'])    # Drop empty rows from these columns
-        print("Retrieved news articles between the dates {} and {}".format(news['date'].min(),
-                                                                           news['date'].max()))
+        print("Retrieved {} news articles between the dates {} and {}.".format(news.shape[0],
+                                                                               news['date'].min(),
+                                                                               news['date'].max()))
         return news
 
     def check_name(self, content: str, name: str) -> bool:
@@ -103,16 +104,3 @@ class ExtractContent:
         # Drop duplicates before returning
         news_relevant = self.news.drop_duplicates(subset=['lemmas'])
         return news_relevant
-
-
-if __name__ == "__main__":
-    data_path = os.path.join('../data', 'all_the_news_v2.csv')
-    name = "Ryan Lochte"
-    nw = IdentifyNews(data_path, name)
-    news = nw.get()
-    # print(news.head(3))
-    print("Extracted {} articles that mention {}".format(news.shape[0], name))
-    ex = ExtractContent(news, name)
-    news_relevant = ex.extract()
-    # print(news_relevant[['relevant', 'lemmas']].head(3))
-    print("Removed duplicates and extracted relevant sentences from {} articles".format(news_relevant.shape[0], name))

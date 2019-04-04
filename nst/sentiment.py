@@ -7,10 +7,9 @@ import pandas as pd
 pd.options.mode.chained_assignment = None
 
 import fastText
-# from flair.models import TextClassifier
-# from flair.data import Sentence
-# from textblob import TextBlob
-
+from flair.models import TextClassifier
+from flair.data import Sentence
+from textblob import TextBlob
 from preprocess import IdentifyNews, ExtractContent
 
 # Paths to pretrained sentiment models
@@ -21,6 +20,30 @@ def make_dirs(dirpath: str) -> None:
     """Make directories for output if necessary"""
     if not os.path.exists(dirpath):
         os.makedirs(dirpath)
+
+
+class TextBlobSentiment:
+    """Class to predict aggregated sentiment on content towards a particular target
+    using TextBlob. Unlike other approaches, this approach does not require a trained 
+    model - TextBlob calculates a 'polarity metric' on each individual word, which is 
+    used to calculate the overall sentiment of a sequence.
+    More details here: https://planspace.org/20150607-textblob_sentiment/
+    """
+    def __init__(self, news: pd.DataFrame) -> None:
+        self.news = news
+
+    def get_sentiment(self, sentences: List[str]) -> Tuple[float, float]:
+        "Calculate the mean sentiment score and standatd deviation for a list of sentences"
+        sentiment_scores = [round(TextBlob(sentence).sentiment.polarity, 4) for sentence in sentences]
+        score = np.mean(sentiment_scores)
+        deviation = np.std(sentiment_scores)
+        return score, deviation
+
+    def score(self) -> pd.DataFrame:
+        "Return a DataFrame with sentiment score and standard deviation columns added"
+        self.news['score'], self.news['deviation'] = zip(*self.news['relevant'].map(self.get_sentiment))
+        return self.news
+
 
 class FastTextSentiment:
     """Class to predict aggregated sentiment on content towards a particular target
@@ -46,7 +69,7 @@ class FastTextSentiment:
         tokenized = list(map(self.tokenize, sentences))
         labels, probabilities = self.model.predict(tokenized, 1)   # Predict just the top label, hence 1
         # The trained model predicts score in [1, 5] - we convert it to a scale [-1, +1]
-        sentiment_scores = [(int(l[0][-1]) - 3)/2 if l else 0 for l in labels]
+        sentiment_scores = [(int(label[0][-1]) - 3)/2 if label else 0 for label in labels]
         score = np.mean(sentiment_scores)
         deviation = np.std(sentiment_scores)
         return score, deviation
@@ -57,11 +80,45 @@ class FastTextSentiment:
         return self.news
 
 
-class PostProcess:
+class FlairSentiment:
+    """Class to predict aggregated sentiment on content towards a particular target
+    using the Flair NLP library. Flair is a powerful PyTorch-based NLP framework that 
+    utilizes contextualized string embeddings (i.e. 'Flair' embeddings) to perform NLP 
+    tasks, including classification. 
+    More information here: https://github.com/zalandoresearch/flair
+    """
+    def __init__(self, news: pd.DataFrame, model_path: str) -> None:
+        self.news = news
+        try:
+            TextClassifier.load_from_file(model_path)
+        except ValueError:
+            raise Exception("Could not find Flair classification model in {}".format(model_path))
+        self.model = TextClassifier.load_from_file(model_path)
+
+    def get_sentiment(self, sentences: List[str]) -> Tuple[float, float]:
+        "Calculate the mean sentiment score and standatd deviation for a list of sentences"
+        scores = []
+        for item in sentences:
+            sentence = Sentence(item)
+            self.model.predict(sentence)
+            scores.append(int(sentence.labels[0].value))
+        sentiment_list = [(score-3)/2 if score else 0 for score in scores]
+        score = np.mean(sentiment_list)
+        deviation = np.std(sentiment_list)
+        return score, deviation
+
+    def score(self) -> pd.DataFrame:
+        "Return a DataFrame with sentiment score and standard deviation columns added"
+        self.news['score'], self.news['deviation'] = zip(*self.news['relevant'].map(self.get_sentiment))
+        return self.news
+
+
+class SentimentAnalyzer:
     "Class to perform data organization and postprocessing on the sentiment analysis DataFrame"
-    def __init__(self, news: pd.DataFrame, name: str, write_data: bool=True) -> None:
+    def __init__(self, news: pd.DataFrame, name: str, method: str, write_data: bool=True) -> None:
         self.news = news
         self.name = name
+        self.method = method
         self.write_ = write_data
 
     def polarity(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
@@ -71,7 +128,7 @@ class PostProcess:
         neg = df[df['score'] < 0.0].sort_values(by=['score']).reset_index(drop=True)
         # Write data (optional)
         if self.write_:
-            out_path = "./results/fasttext"
+            out_path = os.path.join("./results/", self.method)
             make_dirs(out_path)
             file_prefix = '_'.join(self.name.split()).lower()
             # Write positive content
@@ -114,7 +171,7 @@ class PostProcess:
         idx = pd.date_range('1/1/2014', '7/5/2017')
         daily = data.reindex(idx, fill_value=0.0)
         if self.write_:
-            out_path = "./results/fasttext"
+            out_path = os.path.join("./results/", self.method)
             make_dirs(out_path)
             file_prefix = '_'.join(self.name.split()).lower()
             out_filename = file_prefix + '_data.csv'
@@ -130,7 +187,7 @@ class PostProcess:
         brk.columns = ['negative', 'positive']
         brk = brk.sort_values(by='negative')
         if self.write_:
-            out_path = "./results/fasttext"
+            out_path = os.path.join("./results/", self.method)
             make_dirs(out_path)
             file_prefix = '_'.join(self.name.split()).lower()
             out_filename = file_prefix + '_breakdown.csv'
@@ -143,22 +200,3 @@ class PostProcess:
         _ = self.polarity()
         _ = self.daily_data()
         _ = self.breakdown()
-
-
-if __name__ == "__main__":
-    data_path = os.path.join('../data', 'all_the_news_v2.csv')
-    name = "Ryan Lochte"
-    nw = IdentifyNews(data_path, name)
-    news = nw.get()
-    # print(news.head(3))
-    print("Extracted {} articles that mention {}".format(news.shape[0], name))
-    ex = ExtractContent(news, name)
-    news_relevant = ex.extract()
-    # print(news_relevant[['relevant', 'lemmas']].head(3))
-    print("Removed duplicates and extracted relevant sentences from {} articles".format(news_relevant.shape[0], name))
-
-    ft = FastTextSentiment(news_relevant, fasttext_model)
-    df_scores = ft.score()
-    data = PostProcess(df_scores, name, write_data=True)
-    data.get_all()
-    print("Success!! Wrote out positive, negative, daily aggregate and publication breakdown data for {}.".format(name))
