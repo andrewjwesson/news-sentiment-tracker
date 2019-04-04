@@ -17,5 +17,16 @@ For tokenization, sentence segmentation and named entity recognition, we use the
 These have to be downloaded manually:
 
     python3 -m spacy download en
-    python3 -m spacy download en_core_web_sm
     python3 -m spacy download en_core_web_md 
+
+## fastText for Sentiment Analysis
+If using [FastText](https://fasttext.cc/) for sentiment analysis, install the Python module from Facebook Research's 
+repository using ```pip``` as follows.
+
+    $ git clone https://github.com/facebookresearch/fastText.git
+    $ cd fastText
+    $ pip install .
+    
+The fastText library can then be imported into Python using the regular command:
+
+    import fastText
