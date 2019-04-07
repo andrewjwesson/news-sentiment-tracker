@@ -1,5 +1,4 @@
 import html
-import os
 import re
 from string import punctuation
 from typing import List
@@ -9,22 +8,9 @@ import spacy
 
 class IdentifyNews:
     "Class to perform initial filtering of the full news dataset"
-    def __init__(self, data_path: str, name: str) -> None:
-        self.data_path = data_path
+    def __init__(self, news: pd.DataFrame, name: str) -> None:
+        self.news = news
         self.name = name
-
-    def all_the_news(self, data_path: str) -> pd.DataFrame:
-        """Read in "All The News" dataset (downloaded from this source:
-        https://components.one/datasets/all-the-news-articles-dataset/)
-        """
-        colnames = ['title', 'author', 'date', 'content', 'year', 'month', 'publication', 'length']
-        news = pd.read_csv(self.data_path, usecols=colnames, parse_dates=['date'])
-        news['author'] = news['author'].str.strip()
-        news = news.dropna(subset=['date', 'title'])    # Drop empty rows from these columns
-        print("Retrieved {} news articles between the dates {} and {}.".format(news.shape[0],
-                                                                               news['date'].min(),
-                                                                               news['date'].max()))
-        return news
 
     def check_name(self, content: str, name: str) -> bool:
         "Check if target (person/organization or other entity) exists in the news content"
@@ -41,8 +27,7 @@ class IdentifyNews:
 
     def get(self):
         "Check name, then filter to return relevant articles in a Pandas DataFrame"
-        news = self.all_the_news(self.data_path)
-        news_relevant = self.filter_df(news, self.name)
+        news_relevant = self.filter_df(self.news, self.name)
         return news_relevant
 
 
@@ -64,7 +49,7 @@ class ExtractContent:
         x = x.replace('#39;', "'").replace('amp;', '&').replace('#146;', "'").replace(
             'nbsp;', ' ').replace('#36;', '$').replace('\\n', " ").replace('\n', " ").replace(
             'quot;', "'").replace('<br />', "\n").replace('\\"', '"').replace('\\xa0', ' ').replace(
-            ' @.@ ', '.').replace(' @-@ ', '-').replace('\\', ' \\ ')
+            ' @.@ ', '.').replace('\xa0', ' ').replace(' @-@ ', '-').replace('\\', ' \\ ')
         return re1.sub(' ', html.unescape(x))
 
     def sentencize(self, document: str, name: str) -> List[str]:
