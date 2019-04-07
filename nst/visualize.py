@@ -41,8 +41,8 @@ def bar_timeline(file_path: str, name_query: str, image_path: str, write_: bool)
     ax2.fill_between(daily.index, daily['mean_dev'], step='mid', color='black', alpha=0.6, linewidth=4)
     ax2.set_ylabel('Mean Deviation')
     ax2.set_xlabel('Date')
-    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
     fig.patch.set_facecolor('ghostwhite')
+    plt.tight_layout()
     if write_:
         plt.savefig(os.path.join(image_path, "bt_{}.png".format('_'.join(name_query.split()).lower())))
     return daily
@@ -76,10 +76,32 @@ def bar_breakdown(file_path: str, name_query: str, image_path: str, write_: bool
     # Make bar chart
     fig, ax = plt.subplots(1, 1, figsize=(12.5, 9))
     bd.plot(kind='barh')
-    fig.tight_layout()
     fig.patch.set_facecolor('ghostwhite')
+    plt.tight_layout()
     if write_:
         plt.savefig(os.path.join(image_path, "breakdown_{}.png".format('_'.join(name_query.split()).lower())), 
+                    facecolor=fig.get_facecolor())
+
+
+def scatter_cosine_dist(file_path: str, name_query: str, image_path: str, write_: bool) -> None:
+    "Plot mean cosine distance per publication from the multi-dimensional scaling approach"
+    groups = pd.read_csv(file_path, index_col=0)
+    fig, ax = plt.subplots(figsize=(12, 9))
+    # Pick color indices
+    colors = [i for i in range(len(groups.index))]
+    ax.scatter(groups['x'], groups['y'], c=colors,
+               s=groups['count']*100, linewidths=1.5, alpha=0.7,
+               edgecolors='k', cmap=plt.cm.gist_rainbow,
+               )
+    # Annotate points
+    for i, txt in enumerate(groups.index):
+        ax.annotate(txt, (groups['x'][i], groups['y'][i]),
+                    fontsize=18, alpha=0.7)
+    ax.set_xticklabels([''])
+    ax.set_yticklabels([''])
+    plt.tight_layout()
+    if write_:
+        plt.savefig(os.path.join(image_path, "cosine_dist_{}.png".format('_'.join(name_query.split()).lower())), 
                     facecolor=fig.get_facecolor())
 
 
@@ -95,3 +117,6 @@ def make_plots(result_path: str, name_query: str, image_path: str, write_: bool=
     # Get breakdown of pos/neg articles per publication
     fpath = get_filepath(result_path, name_query, 'breakdown', 'csv')
     bar_breakdown(fpath, name_query, image_path, write_)
+    # Get breakdown of pos/neg articles per publication
+    fpath = get_filepath(result_path, name_query, 'cosine_dist', 'csv')
+    scatter_cosine_dist(fpath, name_query, image_path, write_)

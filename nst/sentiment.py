@@ -5,16 +5,13 @@ from typing import List, Tuple
 import numpy as np
 import pandas as pd
 pd.options.mode.chained_assignment = None
-
 import fastText
 from flair.models import TextClassifier
 from flair.data import Sentence
 from textblob import TextBlob
-from preprocess import IdentifyNews, ExtractContent
-
-# Paths to pretrained sentiment models
-fasttext_model = os.path.join('./models', 'fasttext_yelp_review_full.ftz')
-flair_model = os.path.join('./models', 'final-model.pt')
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.manifold import MDS
 
 def make_dirs(dirpath: str) -> None:
     """Make directories for output if necessary"""
@@ -195,8 +192,37 @@ class SentimentAnalyzer:
             brk.to_csv(out_path, header=True)
         return brk
 
+    def cosine_dist(self) -> pd.DataFrame:
+        """Return a dataframe containing the MDS coordinates in 2-dimensions of the 
+        mean cosine distance per publication.
+        """
+        # Define vectorizer parameters
+        tfidf_vectorizer = TfidfVectorizer(max_df=0.8, max_features=200000,
+                                           min_df=0.2)
+        # Get Tf-Idf matrix
+        tfidf_matrix = tfidf_vectorizer.fit_transform(self.news['lemmas'])
+        # Get cosine distance matrix
+        dist = 1 - cosine_similarity(tfidf_matrix)
+        # MDS to reduce dimensinality
+        embedding = MDS(n_components=2, dissimilarity="precomputed", random_state=37)
+        dist_transformed = embedding.fit_transform(dist)
+        xs, ys = dist_transformed[:, 0], dist_transformed[:, 1]
+        publications = pd.DataFrame(dict(label=self.news['publication'], x=xs, y=ys))
+        groups = publications.groupby('label').agg({'label': 'count', 'x': 'mean', 'y': 'mean'})
+        groups.columns = ['count', 'x', 'y']
+        groups = groups.sort_values(by='count')
+        if self.write_:
+            out_path = os.path.join("./results/", self.method)
+            make_dirs(out_path)
+            file_prefix = '_'.join(self.name.split()).lower()
+            out_filename = file_prefix + '_cosine_dist.csv'
+            out_path = os.path.join(out_path, out_filename)
+            groups.to_csv(out_path, header=True)
+        return groups
+
     def get_all(self) -> None:
         "Run all utilities to write out sentiment data to csv"
         _ = self.polarity()
         _ = self.daily_data()
         _ = self.breakdown()
+        _ = self.cosine_dist()

@@ -21,7 +21,7 @@ def extract_content(news: pd.DataFrame, name_query: str) -> pd.DataFrame:
     print("Removed duplicates and extracted relevant sentences from {} articles".format(news_relevant.shape[0], name_query))
     return news_relevant
 
-def analyze(news: pd.DataFrame, model_path: str, method: str) -> None:
+def analyze(news: pd.DataFrame, name_query: str, model_path: str, method: str) -> None:
     "Perform sentiment analysis on the extracted content using a specific method"
     if method == 'textblob':
         tb = TextBlobSentiment(news)
@@ -38,7 +38,6 @@ def analyze(news: pd.DataFrame, model_path: str, method: str) -> None:
     # Analyze sentiment
     data = SentimentAnalyzer(df_scores, name_query, method=method, write_data=True)
     data.get_all()
-    print("Success!! Wrote out positive, negative, daily aggregate and publication breakdown data for {}.".format(name_query))
 
 def plot_results(result_path: str, name_query: str, method: str, write_: bool):
     "Generate plots showing the sentiment over time for each target"
@@ -52,7 +51,7 @@ def main(data_path: str, name_query: str, method: str, model_path: str,
          write_: bool, result_path: str) -> None:
     news = reduce_news(data_path, name_query)
     news_relevant = extract_content(news, name_query)
-    analyze(news_relevant, model_path, method)
+    analyze(news_relevant, name_query, model_path, method)
     plot_results(result_path, name_query, method, write_)
 
 
@@ -64,7 +63,7 @@ if __name__ == "__main__":
     parser.add_argument('-m', '--method', type=str, help='Sentiment analysis model (textblob, fasttext or flair)',
                         default="fasttext")
     parser.add_argument('-n', '--name', type=str, help='Name query (e.g. name of a person/organization)',
-                        required=True)
+                        required=True, nargs='+')
     parser.add_argument('-f', '--modelfile', type=str, help='Path to trained classifier model for fasttext or flair',
                         default='./models/fasttext_yelp_review_full.ftz')
     parser.add_argument('-r', '--results', type=str, help='Path to output result data and plots',
@@ -79,5 +78,7 @@ if __name__ == "__main__":
     write_ = args.write
     model_path = args.modelfile
     # Run
-    main(input_data, name_query, method, model_path, write_, result_path)
+    for query in name_query:
+        main(input_data, query, method, model_path, write_, result_path)
+        print("Success!! Wrote out positive, negative, daily aggregate and publication breakdown data for {}.\n".format(query))
     print("Done... Completed analysis.")
