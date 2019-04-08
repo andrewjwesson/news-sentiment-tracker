@@ -1,0 +1,53 @@
+National Review,0.0,1.0,liberia
+Business Insider,1.0,0.0,liberia
+New York Post,2.0,5.0,liberia
+Reuters,2.0,2.0,liberia
+Verge,3.0,1.0,liberia
+Buzzfeed News,4.0,2.0,liberia
+Atlantic,5.0,8.0,liberia
+Guardian,5.0,8.0,liberia
+Breitbart,6.0,9.0,liberia
+CNN,6.0,13.0,liberia
+New York Times,9.0,8.0,liberia
+Los Angeles Times,19.0,16.0,liberia
+NPR,19.0,18.0,liberia
+Talking Points Memo,1.0,0.0,martin_shkreli
+Atlantic,2.0,3.0,martin_shkreli
+CNN,2.0,0.0,martin_shkreli
+New York Times,2.0,0.0,martin_shkreli
+Buzzfeed News,3.0,1.0,martin_shkreli
+Los Angeles Times,3.0,0.0,martin_shkreli
+NPR,3.0,1.0,martin_shkreli
+Fox News,4.0,1.0,martin_shkreli
+Guardian,5.0,0.0,martin_shkreli
+Business Insider,8.0,3.0,martin_shkreli
+Breitbart,13.0,16.0,martin_shkreli
+New York Post,19.0,2.0,martin_shkreli
+Reuters,186.0,22.0,martin_shkreli
+Los Angeles Times,1.0,1.0,ryan_lochte
+National Review,2.0,5.0,ryan_lochte
+Reuters,3.0,1.0,ryan_lochte
+Business Insider,5.0,1.0,ryan_lochte
+Fox News,6.0,7.0,ryan_lochte
+New York Post,6.0,6.0,ryan_lochte
+Breitbart,7.0,0.0,ryan_lochte
+Guardian,7.0,7.0,ryan_lochte
+NPR,9.0,4.0,ryan_lochte
+Atlantic,10.0,9.0,ryan_lochte
+Buzzfeed News,10.0,1.0,ryan_lochte
+CNN,13.0,7.0,ryan_lochte
+New York Times,22.0,12.0,ryan_lochte
+Talking Points Memo,0.0,1.0,united_airlines
+Fox News,1.0,2.0,united_airlines
+Atlantic,2.0,2.0,united_airlines
+National Review,2.0,2.0,united_airlines
+Buzzfeed News,6.0,2.0,united_airlines
+Breitbart,10.0,2.0,united_airlines
+Los Angeles Times,14.0,4.0,united_airlines
+NPR,16.0,5.0,united_airlines
+Guardian,17.0,2.0,united_airlines
+New York Times,17.0,7.0,united_airlines
+Business Insider,23.0,4.0,united_airlines
+CNN,24.0,11.0,united_airlines
+Reuters,25.0,5.0,united_airlines
+New York Post,26.0,13.0,united_airlines
