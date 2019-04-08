@@ -50,7 +50,10 @@ def analyze(news: pd.DataFrame, name_query: str, model_path: str, method: str) -
         raise Exception("The requested method for sentiment analysis has not yet been implemented!") 
 
     # Analyze sentiment
-    data = SentimentAnalyzer(df_scores, name_query, method=method, write_data=True)
+    # TODO: Make the date window an argument to be able to query different time periods
+    date_window = ('1/1/2014', '7/5/2017')
+    data = SentimentAnalyzer(df_scores, name_query, method=method,
+                             window=date_window, write_data=True)
     data.get_all()
 
 def plot_results(result_path: str, name_query: str, method: str, write_: bool):

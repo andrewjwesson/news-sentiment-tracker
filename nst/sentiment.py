@@ -112,30 +112,33 @@ class FlairSentiment:
 
 class SentimentAnalyzer:
     "Class to perform data organization and postprocessing on the sentiment analysis DataFrame"
-    def __init__(self, news: pd.DataFrame, name: str, method: str, write_data: bool=True) -> None:
+    def __init__(self, news: pd.DataFrame, name: str, method: str,
+                 window: tuple, write_data: bool=True) -> None:
         self.news = news
-        self.name = name
+        self.name = '_'.join(name.split()).lower()
         self.method = method
         self.write_ = write_data
+        self.window = window
 
     def polarity(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
         "Return positive and negative sentiment scoring content on the existing DataFrame"
-        df = self.news
+        df = self.news[['date', 'title', 'publication', 'relevant', 'score', 'deviation']]
+        df['query'] = self.name
         pos = df[df['score'] > 0.0].sort_values(by=['score'], ascending=False).reset_index(drop=True)
         neg = df[df['score'] < 0.0].sort_values(by=['score']).reset_index(drop=True)
         # Write data (optional)
         if self.write_:
             out_path = os.path.join("./results/", self.method)
             make_dirs(out_path)
-            file_prefix = '_'.join(self.name.split()).lower()
+            file_prefix = self.name
             # Write positive content
             pos_filename = file_prefix + '_pos.csv'
             pos_path = os.path.join(out_path, pos_filename)
-            pos.sort_values(by='date').to_csv(pos_path, index=False, header=True)
+            pos.sort_values(by='date').to_csv(pos_path, index=False, header=False)
             # Write negative content
             neg_filename = file_prefix + '_neg.csv'
             neg_path = os.path.join(out_path, neg_filename)
-            neg.sort_values(by='date').to_csv(neg_path, index=False, header=True)
+            neg.sort_values(by='date').to_csv(neg_path, index=False, header=False)
         return pos, neg
 
     def peak_polar(self) -> pd.DataFrame:
@@ -165,15 +168,16 @@ class SentimentAnalyzer:
         aggregated = self.aggregate()
         data = pd.concat((peak_polar, aggregated), axis=1).sort_index()
         # Reindex to get daily data (fill non-existent rows with zeros)
-        idx = pd.date_range('1/1/2014', '7/5/2017')
+        idx = pd.date_range(self.window[0], self.window[1])  # Select start/end date of tuple
         daily = data.reindex(idx, fill_value=0.0)
+        daily['query'] = self.name
         if self.write_:
             out_path = os.path.join("./results/", self.method)
             make_dirs(out_path)
-            file_prefix = '_'.join(self.name.split()).lower()
+            file_prefix = self.name
             out_filename = file_prefix + '_data.csv'
             out_path = os.path.join(out_path, out_filename)
-            daily[~daily['relevant'].eq(0)].to_csv(out_path, header=True)
+            daily[~daily['relevant'].eq(0)].to_csv(out_path, header=False)
         return daily
 
     def breakdown(self) -> pd.DataFrame:
@@ -181,19 +185,20 @@ class SentimentAnalyzer:
         brk = self.news.groupby('publication').apply(lambda x: x['score'] >= 0.0)
         brk = brk.groupby('publication').value_counts().to_frame()
         brk = brk.unstack().fillna(0.0)
-        brk.columns = ['negative', 'positive']
+        brk['query'] = self.name
+        brk.columns = ['negative', 'positive', 'query']
         brk = brk.sort_values(by='negative')
         if self.write_:
             out_path = os.path.join("./results/", self.method)
             make_dirs(out_path)
-            file_prefix = '_'.join(self.name.split()).lower()
+            file_prefix = self.name
             out_filename = file_prefix + '_breakdown.csv'
             out_path = os.path.join(out_path, out_filename)
-            brk.to_csv(out_path, header=True)
+            brk.to_csv(out_path, header=False)
         return brk
 
     def cosine_dist(self) -> pd.DataFrame:
-        """Return a dataframe containing the MDS coordinates in 2-dimensions of the 
+        """Return a dataframe containing the MDS coordinates in 2-dimensions of the
         mean cosine distance per publication.
         """
         # Define vectorizer parameters
@@ -209,15 +214,16 @@ class SentimentAnalyzer:
         xs, ys = dist_transformed[:, 0], dist_transformed[:, 1]
         publications = pd.DataFrame(dict(label=self.news['publication'], x=xs, y=ys))
         groups = publications.groupby('label').agg({'label': 'count', 'x': 'mean', 'y': 'mean'})
-        groups.columns = ['count', 'x', 'y']
+        groups['query'] = self.name
+        groups.columns = ['count', 'x', 'y', 'query']
         groups = groups.sort_values(by='count')
         if self.write_:
             out_path = os.path.join("./results/", self.method)
             make_dirs(out_path)
-            file_prefix = '_'.join(self.name.split()).lower()
+            file_prefix = self.name
             out_filename = file_prefix + '_cosine_dist.csv'
             out_path = os.path.join(out_path, out_filename)
-            groups.to_csv(out_path, header=True)
+            groups.to_csv(out_path, header=False)
         return groups
 
     def get_all(self) -> None:

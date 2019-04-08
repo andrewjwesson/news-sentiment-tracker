@@ -7,8 +7,7 @@ import calmap  # for making GitHub-style calendar plots of time-series
 import matplotlib.pyplot as plt
 from pandas.plotting import register_matplotlib_converters  # Plot using Pandas datatime objects
 register_matplotlib_converters()
-rc_fonts = {'figure.figsize': (15, 8),
-            'axes.labelsize': 16,
+rc_fonts = {'axes.labelsize': 16,
             'xtick.labelsize': 14,
             'ytick.labelsize': 14,
             'legend.fontsize': 16}
@@ -30,6 +29,7 @@ def bar_timeline(file_path: str, name_query: str, image_path: str, write_: bool)
     """Bar chart showing the timeline of average positive and negative scores and deviation
     """
     daily = pd.read_csv(file_path, index_col=0, parse_dates=True)
+    daily.columns = ['title', 'publication', 'relevant', 'mean_score', 'mean_dev', 'count', 'query']
     # Reindex data daily
     idx = pd.date_range('1/1/2014', '7/5/2017')
     daily = daily.reindex(idx, fill_value=0.0)
@@ -37,6 +37,11 @@ def bar_timeline(file_path: str, name_query: str, image_path: str, write_: bool)
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 8))
     ax1.fill_between(daily.index, daily['mean_score'], step='mid', color='black', alpha=0.6, linewidth=4)
     ax1.set_ylabel('Mean Score')
+    # Initiate a second y-axis with a shared x-axis for the article counts
+    ax2_2 = ax2.twinx()
+    ax2_2.plot(daily.index, daily['count'], 'r--', alpha=0.6, linewidth=2)
+    ax2_2.grid(False)
+    ax2_2.set_ylabel('Article Count')
     # ax1.set_title('Sentiment scores and deviations with time for "{}"'.format(name_query), size=15)
     ax2.fill_between(daily.index, daily['mean_dev'], step='mid', color='black', alpha=0.6, linewidth=4)
     ax2.set_ylabel('Mean Deviation')
@@ -73,6 +78,7 @@ def calendar_map(daily_data: pd.DataFrame, name_query: str, image_path: str, wri
 def bar_breakdown(file_path: str, name_query: str, image_path: str, write_: bool) -> None:
     "Plot breakdown of positive and negative articles towards the article per publication"
     bd = pd.read_csv(file_path, index_col=0)
+    bd .columns = ['Negative', 'Positive', 'query']
     # Make bar chart
     fig, ax = plt.subplots(1, 1, figsize=(12.5, 9))
     bd.plot(kind='barh')
@@ -86,6 +92,7 @@ def bar_breakdown(file_path: str, name_query: str, image_path: str, write_: bool
 def scatter_cosine_dist(file_path: str, name_query: str, image_path: str, write_: bool) -> None:
     "Plot mean cosine distance per publication from the multi-dimensional scaling approach"
     groups = pd.read_csv(file_path, index_col=0)
+    groups.columns = ['count', 'x', 'y', 'query']
     fig, ax = plt.subplots(figsize=(12, 9))
     # Pick color indices
     colors = [i for i in range(len(groups.index))]
