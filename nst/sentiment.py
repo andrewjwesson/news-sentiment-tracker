@@ -107,11 +107,10 @@ class FlairSentiment:
 class SentimentAnalyzer:
     "Class to perform data organization and postprocessing on the sentiment analysis DataFrame"
     def __init__(self, news: pd.DataFrame, name: str, result_path: str, method: str,
-                 window: tuple, write_data: bool=True) -> None:
+                 window: tuple) -> None:
         self.news = news
         self.name = '_'.join(name.split()).lower()
         self.method = method
-        self.write_ = write_data
         self.window = window
         self.out_path = os.path.join(result_path, method)
 
@@ -119,12 +118,10 @@ class SentimentAnalyzer:
         "Return positive and negative sentiment content on the existing DataFrame"
         df = self.news[['date', 'title', 'publication', 'relevant', 'score', 'deviation']]
         df['query'] = self.name
-        # Write data (optional)
-        if self.write_:
-            # Write positive content
-            path = os.path.join(self.out_path, 'polarity.csv')
-            with open(path, 'a') as write_pos:
-                df.sort_values(by='date').to_csv(write_pos, index=False, header=False)
+        # Write out content
+        path = os.path.join(self.out_path, 'polarity.csv')
+        with open(path, 'a') as write_pos:
+            df.sort_values(by='date').to_csv(write_pos, index=False, header=False)
         return df
 
     def peak_polar(self) -> pd.DataFrame:
@@ -157,10 +154,10 @@ class SentimentAnalyzer:
         idx = pd.date_range(self.window[0], self.window[1])  # Select start/end date of tuple
         daily = data.reindex(idx, fill_value=0.0)
         daily['query'] = self.name
-        if self.write_:
-            path = os.path.join(self.out_path, 'data.csv')
-            with open(path, 'a') as write_daily:
-                daily[~daily['relevant'].eq(0)].to_csv(write_daily, header=False)
+        # Write output
+        path = os.path.join(self.out_path, 'data.csv')
+        with open(path, 'a') as write_daily:
+            daily[~daily['relevant'].eq(0)].to_csv(write_daily, header=False)
         return daily
 
     def breakdown(self) -> pd.DataFrame:
@@ -171,10 +168,10 @@ class SentimentAnalyzer:
         brk['query'] = self.name
         brk.columns = ['negative', 'positive', 'query']
         brk = brk.sort_values(by='negative')
-        if self.write_:
-            path = os.path.join(self.out_path, 'breakdown.csv')
-            with open(path, 'a') as write_brk:
-                brk.to_csv(write_brk, header=False)
+        # Write output
+        path = os.path.join(self.out_path, 'breakdown.csv')
+        with open(path, 'a') as write_brk:
+            brk.to_csv(write_brk, header=False)
         return brk
 
     def cosine_dist(self) -> pd.DataFrame:
@@ -197,10 +194,10 @@ class SentimentAnalyzer:
         groups['query'] = self.name
         groups.columns = ['count', 'x', 'y', 'query']
         groups = groups.sort_values(by='count')
-        if self.write_:
-            path = os.path.join(self.out_path, 'cosine_dist.csv')
-            with open(path, 'a') as write_cos:
-                groups.to_csv(write_cos, header=False)
+        # Write output
+        path = os.path.join(self.out_path, 'cosine_dist.csv')
+        with open(path, 'a') as write_cos:
+            groups.to_csv(write_cos, header=False)
         return groups
 
     def get_all(self) -> None:

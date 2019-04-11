@@ -27,6 +27,15 @@ def get_filepath(path: str, suffix: str, filetype: str='csv') -> str:
     filepath = os.path.join(path, suffix_string)
     return filepath
 
+def str2bool(v):
+    "Parse boolean inputs from argparse correctly"
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
 def all_the_news(data_path: str) -> pd.DataFrame:
     """Read in "All The News" dataset (downloaded from this source:
     https://components.one/datasets/all-the-news-articles-dataset/)
@@ -72,7 +81,7 @@ def analyze(news: pd.DataFrame, name_query: str, model_path: str, result_path: s
     make_dirs(result_path)  # Create result output directory
     # Analyze sentiment
     data = SentimentAnalyzer(df_scores, name_query, result_path, method,
-                             date_window, write_)
+                             date_window)
     data.get_all()
 
 def read_df(news_path: str, polarity_path: str,
@@ -100,19 +109,12 @@ def make_plots(data: pd.DataFrame, polarity_df: pd.DataFrame, cosine_df: pd.Data
     bar_breakdown(polarity_df, name_query, image_path, write_)
     scatter_cosine_dist(cosine_df, name_query, image_path, write_)
 
-
-def main(news: pd.DataFrame, name_query: str, method: str, model_path: str, 
-         write_: bool, result_path: str, date_window: tuple) -> None:
+def run_analysis(news: pd.DataFrame, name_query: str, method: str, model_path: str, 
+                 result_path: str, date_window: tuple) -> None:
     news = reduce_news(news, name_query)
     news_relevant = extract_content(news, name_query)
     analyze(news_relevant, name_query, model_path, result_path, method, date_window)
     # Generate paths
-    out_path = os.path.join(result_path, method)
-    news_path = get_filepath(out_path, 'data', 'csv')
-    polarity_path = get_filepath(out_path, 'breakdown', 'csv')
-    cosine_dist_path = get_filepath(out_path, 'cosine_dist', 'csv')
-    data, polarity_df, cosine_df = read_df(news_path, polarity_path, cosine_dist_path)
-    make_plots(data, polarity_df, cosine_df, out_path, name_query, method, date_window, write_)
 
 
 if __name__ == "__main__":
@@ -128,14 +130,15 @@ if __name__ == "__main__":
                         default='./models/fasttext_yelp_review_full.ftz')
     parser.add_argument('-r', '--results', type=str, help='Path to output result data and plots',
                         default='./results')
-    parser.add_argument('-w', '--write', type=bool, help='Boolean flag to choose whether or not to write output data',
+    parser.add_argument('-w', '--write', type=str2bool, help="Boolean flag in ('yes', 'true', 't', 'y', '1') \
+                        and its correponding negation to choose whether or not to write out image files",
                         default=True)
     args = parser.parse_args()
     input_data = args.inp
     method = args.method
     name_query = args.name
     result_path = args.results
-    write_ = args.write
+    write_ = bool(args.write)
     model_path = args.modelfile
 
     # Read in dataset
@@ -147,6 +150,18 @@ if __name__ == "__main__":
 
     # Run
     for query in name_query:
-        main(news, query, method, model_path, write_, result_path, date_window)
+        run_analysis(news, query, method, model_path, result_path, date_window)
         print("Success!! Wrote out positive, negative, daily aggregate and publication breakdown data for {}.\n".format(query))
-    print("Done... Completed analysis.")
+    # Once analysis results are generated, read results for plotting
+    out_path = os.path.join(result_path, method)
+    news_path = get_filepath(out_path, 'data', 'csv')
+    polarity_path = get_filepath(out_path, 'breakdown', 'csv')
+    cosine_dist_path = get_filepath(out_path, 'cosine_dist', 'csv')
+    data, polarity_df, cosine_df = read_df(news_path, polarity_path, cosine_dist_path)
+    # Generate plots for each case
+    for query in name_query:
+        make_plots(data, polarity_df, cosine_df, out_path, query, method, date_window, write_)
+        if write_:
+            print("Output plots for {}.".format(query))
+    
+    print("\nDone... Completed analysis.")
