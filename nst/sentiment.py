@@ -13,11 +13,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.manifold import MDS
 
-def make_dirs(dirpath: str) -> None:
-    """Make directories for output if necessary"""
-    if not os.path.exists(dirpath):
-        os.makedirs(dirpath)
-
 
 class TextBlobSentiment:
     """Class to predict aggregated sentiment on content towards a particular target
@@ -87,11 +82,10 @@ class FlairSentiment:
     def __init__(self, news: pd.DataFrame, model_path: str) -> None:
         self.news = news
         try:
-            TextClassifier.load_from_file(model_path)
+            self.model = TextClassifier.load_from_file(model_path)
         except ValueError:
             raise Exception("Could not find Flair classification model in {}".format(model_path))
-        self.model = TextClassifier.load_from_file(model_path)
-
+        
     def get_sentiment(self, sentences: List[str]) -> Tuple[float, float]:
         "Calculate the mean sentiment score and standatd deviation for a list of sentences"
         scores = []
@@ -112,34 +106,26 @@ class FlairSentiment:
 
 class SentimentAnalyzer:
     "Class to perform data organization and postprocessing on the sentiment analysis DataFrame"
-    def __init__(self, news: pd.DataFrame, name: str, method: str,
+    def __init__(self, news: pd.DataFrame, name: str, result_path: str, method: str,
                  window: tuple, write_data: bool=True) -> None:
         self.news = news
         self.name = '_'.join(name.split()).lower()
         self.method = method
         self.write_ = write_data
         self.window = window
+        self.out_path = os.path.join(result_path, method)
 
     def polarity(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        "Return positive and negative sentiment scoring content on the existing DataFrame"
+        "Return positive and negative sentiment content on the existing DataFrame"
         df = self.news[['date', 'title', 'publication', 'relevant', 'score', 'deviation']]
         df['query'] = self.name
-        pos = df[df['score'] > 0.0].sort_values(by=['score'], ascending=False).reset_index(drop=True)
-        neg = df[df['score'] < 0.0].sort_values(by=['score']).reset_index(drop=True)
         # Write data (optional)
         if self.write_:
-            out_path = os.path.join("./results/", self.method)
-            make_dirs(out_path)
-            file_prefix = self.name
             # Write positive content
-            pos_filename = file_prefix + '_pos.csv'
-            pos_path = os.path.join(out_path, pos_filename)
-            pos.sort_values(by='date').to_csv(pos_path, index=False, header=False)
-            # Write negative content
-            neg_filename = file_prefix + '_neg.csv'
-            neg_path = os.path.join(out_path, neg_filename)
-            neg.sort_values(by='date').to_csv(neg_path, index=False, header=False)
-        return pos, neg
+            path = os.path.join(self.out_path, 'polarity.csv')
+            with open(path, 'a') as write_pos:
+                df.sort_values(by='date').to_csv(write_pos, index=False, header=False)
+        return df
 
     def peak_polar(self) -> pd.DataFrame:
         "Store the peak absolute polarity (to identify most polar content, positive or negative)"
@@ -155,7 +141,7 @@ class SentimentAnalyzer:
         news_avg_score = self.news.groupby('date')['score'].mean()
         news_avg_dev = self.news.groupby('date')['deviation'].mean()
         news_count = self.news.groupby(['date']).count()['title']
-        aggregated = pd.concat((news_avg_score, news_avg_dev, 
+        aggregated = pd.concat((news_avg_score, news_avg_dev,
                                 news_count), axis=1).sort_values(by=['date'])
         aggregated.columns = ['mean_score', 'mean_dev', 'count']
         return aggregated
@@ -172,12 +158,9 @@ class SentimentAnalyzer:
         daily = data.reindex(idx, fill_value=0.0)
         daily['query'] = self.name
         if self.write_:
-            out_path = os.path.join("./results/", self.method)
-            make_dirs(out_path)
-            file_prefix = self.name
-            out_filename = file_prefix + '_data.csv'
-            out_path = os.path.join(out_path, out_filename)
-            daily[~daily['relevant'].eq(0)].to_csv(out_path, header=False)
+            path = os.path.join(self.out_path, 'data.csv')
+            with open(path, 'a') as write_daily:
+                daily[~daily['relevant'].eq(0)].to_csv(write_daily, header=False)
         return daily
 
     def breakdown(self) -> pd.DataFrame:
@@ -189,12 +172,9 @@ class SentimentAnalyzer:
         brk.columns = ['negative', 'positive', 'query']
         brk = brk.sort_values(by='negative')
         if self.write_:
-            out_path = os.path.join("./results/", self.method)
-            make_dirs(out_path)
-            file_prefix = self.name
-            out_filename = file_prefix + '_breakdown.csv'
-            out_path = os.path.join(out_path, out_filename)
-            brk.to_csv(out_path, header=False)
+            path = os.path.join(self.out_path, 'breakdown.csv')
+            with open(path, 'a') as write_brk:
+                brk.to_csv(write_brk, header=False)
         return brk
 
     def cosine_dist(self) -> pd.DataFrame:
@@ -218,12 +198,9 @@ class SentimentAnalyzer:
         groups.columns = ['count', 'x', 'y', 'query']
         groups = groups.sort_values(by='count')
         if self.write_:
-            out_path = os.path.join("./results/", self.method)
-            make_dirs(out_path)
-            file_prefix = self.name
-            out_filename = file_prefix + '_cosine_dist.csv'
-            out_path = os.path.join(out_path, out_filename)
-            groups.to_csv(out_path, header=False)
+            path = os.path.join(self.out_path, 'cosine_dist.csv')
+            with open(path, 'a') as write_cos:
+                groups.to_csv(write_cos, header=False)
         return groups
 
     def get_all(self) -> None:

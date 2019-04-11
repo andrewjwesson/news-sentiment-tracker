@@ -1,11 +1,31 @@
 "Sentiment Analysis script to calculate sentiment scores over time and output visualizations"
 from preprocess import IdentifyNews, ExtractContent
 from sentiment import TextBlobSentiment, FastTextSentiment, FlairSentiment, SentimentAnalyzer
-from visualize import make_plots
+from visualize import bar_timeline, heatmap_calendar, bar_breakdown, scatter_cosine_dist
 
 import argparse
 import os
 import pandas as pd
+from typing import Tuple
+
+
+def make_dirs(dirpath: str) -> None:
+    """Make directories for output if necessary"""
+    if not os.path.exists(dirpath):
+        os.makedirs(dirpath)
+
+def clean_dirs(dirpath: str) -> None:
+    "Clean up results directory before run"
+    existing = [os.path.join(dirpath, f) for f in os.listdir(dirpath)]
+    for f in existing:
+        if os.path.isfile(f):
+            os.remove(f)
+
+def get_filepath(path: str, suffix: str, filetype: str='csv') -> str:
+    "Obtain relative path to data based on specified suffix string"
+    suffix_string = "{}.{}".format(suffix, filetype)
+    filepath = os.path.join(path, suffix_string)
+    return filepath
 
 def all_the_news(data_path: str) -> pd.DataFrame:
     """Read in "All The News" dataset (downloaded from this source:
@@ -19,7 +39,6 @@ def all_the_news(data_path: str) -> pd.DataFrame:
                                                                            news['date'].min(),
                                                                            news['date'].max()))
     return news
-
 
 def reduce_news(data_path: str, name_query: str) -> pd.DataFrame:
     "Reduce the full news dataset to only those articles that mention our target name query"
@@ -35,7 +54,8 @@ def extract_content(news: pd.DataFrame, name_query: str) -> pd.DataFrame:
     print("Removed duplicates and extracted relevant sentences from {} articles".format(news_relevant.shape[0], name_query))
     return news_relevant
 
-def analyze(news: pd.DataFrame, name_query: str, model_path: str, method: str) -> None:
+def analyze(news: pd.DataFrame, name_query: str, model_path: str, result_path: str, method: str,
+            date_window: tuple) -> None:
     "Perform sentiment analysis on the extracted content using a specific method"
     if method == 'textblob':
         tb = TextBlobSentiment(news)
@@ -49,27 +69,50 @@ def analyze(news: pd.DataFrame, name_query: str, model_path: str, method: str) -
     else:
         raise Exception("The requested method for sentiment analysis has not yet been implemented!") 
 
+    make_dirs(result_path)  # Create result output directory
     # Analyze sentiment
-    # TODO: Make the date window an argument to be able to query different time periods
-    date_window = ('1/1/2014', '7/5/2017')
-    data = SentimentAnalyzer(df_scores, name_query, method=method,
-                             window=date_window, write_data=True)
+    data = SentimentAnalyzer(df_scores, name_query, result_path, method,
+                             date_window, write_)
     data.get_all()
 
-def plot_results(result_path: str, name_query: str, method: str, write_: bool):
+def read_df(news_path: str, polarity_path: str,
+            cosine_dist_path: str) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    "Read data from sentiment analysis and store in memory for plotting"
+    data = pd.read_csv(news_path, header=None, index_col=0, parse_dates=True)
+    data.columns = ['title', 'publication', 'relevant', 'mean_score', 'mean_dev', 'count', 'query']
+    # Read in polarity breakdown (pos/neg) per publication
+    polarity_df = pd.read_csv(polarity_path, header=None, index_col=0)
+    polarity_df.columns = ['Negative', 'Positive', 'query']
+    # Read in mean cosine distance per publication
+    cosine_df = pd.read_csv(cosine_dist_path, header=None, index_col=0)
+    cosine_df.columns = ['count', 'x', 'y', 'query']
+    return data, polarity_df, cosine_df
+
+def make_plots(data: pd.DataFrame, polarity_df: pd.DataFrame, cosine_df: pd.DataFrame,
+               out_path: str, name_query: str, method: str, date_window: tuple, write_: bool):
     "Generate plots showing the sentiment over time for each target"
-    out_path = os.path.join(result_path, method)
-    write_ = True
+    # Generate paths
     image_path = os.path.join(out_path, "plots")
-    # make plots
-    make_plots(out_path, name_query, image_path, write_)
+    make_dirs(image_path)    # Create image output directory
+    # Call plotting functions
+    bar_timeline(data, name_query, image_path, date_window, write_)
+    heatmap_calendar(data, name_query, image_path, date_window, write_)
+    bar_breakdown(polarity_df, name_query, image_path, write_)
+    scatter_cosine_dist(cosine_df, name_query, image_path, write_)
+
 
 def main(news: pd.DataFrame, name_query: str, method: str, model_path: str, 
-         write_: bool, result_path: str) -> None:
+         write_: bool, result_path: str, date_window: tuple) -> None:
     news = reduce_news(news, name_query)
     news_relevant = extract_content(news, name_query)
-    analyze(news_relevant, name_query, model_path, method)
-    plot_results(result_path, name_query, method, write_)
+    analyze(news_relevant, name_query, model_path, result_path, method, date_window)
+    # Generate paths
+    out_path = os.path.join(result_path, method)
+    news_path = get_filepath(out_path, 'data', 'csv')
+    polarity_path = get_filepath(out_path, 'breakdown', 'csv')
+    cosine_dist_path = get_filepath(out_path, 'cosine_dist', 'csv')
+    data, polarity_df, cosine_df = read_df(news_path, polarity_path, cosine_dist_path)
+    make_plots(data, polarity_df, cosine_df, out_path, name_query, method, date_window, write_)
 
 
 if __name__ == "__main__":
@@ -97,9 +140,13 @@ if __name__ == "__main__":
 
     # Read in dataset
     news = all_the_news(input_data)
+    make_dirs(os.path.join(result_path, method))
+    clean_dirs(os.path.join(result_path, method))
+    # Specify date window to resample data on a daily basis
+    date_window = ('1/1/2014', '7/5/2017')
 
     # Run
     for query in name_query:
-        main(news, query, method, model_path, write_, result_path)
+        main(news, query, method, model_path, write_, result_path, date_window)
         print("Success!! Wrote out positive, negative, daily aggregate and publication breakdown data for {}.\n".format(query))
     print("Done... Completed analysis.")
