@@ -26,11 +26,10 @@ For further development, simply activate the existing virtual environment.
 
     source venv/bin/activate
 
-For tokenization, sentence segmentation and named entity recognition, we use the SpaCy library's English language models. 
-These have to be downloaded manually:
+For tokenization and sentence segmentation, we use the SpaCy library's English language model. 
+This must be downloaded manually:
 
     python3 -m spacy download en
-    python3 -m spacy download en_core_web_md 
 
 ### fastText for Sentiment Analysis
 
@@ -44,22 +43,49 @@ repository using ```pip``` as follows.
 The fastText library can then be imported into Python using the regular command:
 
     import fastText
-    
-## Sentiment Models
 
-The below sentiment classifier models have been implemented thus far:
+### Sentiment Models
+
+The below sentiment classifiers have been implemented thus far. All models were trained on the Yelp 5-class
+review dataset. 
+
  - **TextBlob**: Does not require a trained model (uses the internal "polarity" metric from TextBlob)
- - **fastText**: Requires the 5-classes [fastText supervised model](https://fasttext.cc/docs/en/supervised-models.html) 
- (already present in ```./models```)
- - **Flair**: Requires a GPU-enabled machine to run, and a trained Flair classifier model (to be added soon)
+ - **fastText**: Requires the 5-classes [fastText trained supervised model](https://fasttext.cc/docs/en/supervised-models.html) 
+ (the compressed model already exists in ```./models```)
+ - **Flair**: Requires a GPU-enabled machine to run, and a trained Flair classifier model 
+(provided at [this GoogleDrive link](https://drive.google.com/open?id=1XQymhmhyXtsU2SawxgzvD5DZocX44JKY)). 
+**NOTE** The trained model is 512 MB in size. The same model can be retrained using the code and data provided in 
+![](./nst/training_and_validation/train.py). We used an NVIDIA P100 GPU with 16 GB of memory for all training experiments. 
  
- ## Usage
+## Usage
+
+### Run sentiment analysis
  
- Run the file ```analysis.py```. An example case is shown below.
+Run the file ```analysis.py```. An example case for multiple queries using fastText is shown below.
  
-    python3 analysis.py --method fasttext -name "United Airlines"
+    python3 analysis.py --method fasttext --name "United Airlines" "Ryan Lochte"
+
+To use a trained Flair NLP model (in PyTorch format), the ```modelfile``` argument must be passed.
+
+    python3 analysis.py --method flair --name "United Airlines" "Ryan Lochte" --modelfile ./models/final-model.pt
     
- To get a full list of options for ```analysis.py```, type ```python3 analysis -h```
+Below is a full list of arguments to run the analysis.
+
+    Optional arguments:
+    -h, --help            show this help message and exit
+    -i INP, --inp INP     Path to news dataset (csv or similar)
+    -m METHOD, --method METHOD
+                        Sentiment analysis model (textblob, fasttext or flair)
+    -n NAME [NAME ...], --name NAME [NAME ...]
+                        Name query (e.g. name of a person/organization)
+    -f MODELFILE, --modelfile MODELFILE
+                        Path to trained classifier model for fasttext or flair
+    -r RESULTS, --results RESULTS
+                        Path to output result data and plots
+    -w WRITE, --write WRITE
+                        Boolean flag in ('yes', 'true', 't', 'y', '1') and its
+                        correponding negation to choose whether or not to
+                        write out image files
 
 ## User Interface Demo
 

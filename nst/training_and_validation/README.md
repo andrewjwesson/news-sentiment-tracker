@@ -1,5 +1,7 @@
 # Training sentiment models on the Yelp 5-class review dataset
-The provided code performs training and validation for the Yelp 5-class review dataset. 
+The provided code performs training and validation for the [Yelp 5-class review dataset](https://www.yelp.com/dataset). 
+To generate the downsampled and stratified training/test data for this task, first download the yelp dataset from the
+official link.
 
 ## Approach 1: fastText
 
@@ -19,7 +21,7 @@ To train a bigram model with a learning rate of 0.5 for 5 epochs, the following 
 
     fasttext supervised -input yelp_data/train.csv -output model_bigram -lr 0.5 -epoch 5 -wordNgrams 2
 
-For a full set of tunable hyperparameters to improve the training accuracy, use the following command
+For a full set of tunable hyperparameters to further improve the training, use the following command
 
     fasttext supervised -h
 
@@ -52,7 +54,7 @@ The test set is similarly downsized. Stratified sampling is used on both the tra
 
 To train the Flair NLP model on the Yelp dataset, run the script ```train.py``` on a GPU-enabled machine:
 
-    python train.py
+    python3 train.py
 
 This will generate a model file ```final-model.pt``` which can then be used for test predictions. 
 
