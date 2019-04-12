@@ -1,5 +1,18 @@
-# news-sentiment-tracker
-Track changes in sentiment towards an entity using news article data.
+# News Sentiment Tracker
+## A Targeted Opinion Mining Interface
+
+In this project, we showcase an end-to-end NLP-based application that automatically detects
+fine-grained sentiment towards a specific target query (such as a person, event, product or 
+organization) in news articles. We apply novel combinations of techniques from big data, NLP
+and time series visualization to provide the end user targeted insights into press coverage on a
+specific entity. Our system is shown to identify large-scale shifts in sentiment in news coverage
+towards a target reliably, as can be seen in the showcased real-world examples from past events
+covered by US news publications. 
+
+## Our Data Product
+
+[See the web-based app on Heroku.](https://nlp-733-dash.herokuapp.com)
+Example usage of the web UI is at the bottom of this page. 
 
 ## Install modules
 
@@ -47,4 +60,21 @@ The below sentiment classifier models have been implemented thus far:
     python3 analysis.py --method fasttext -name "United Airlines"
     
  To get a full list of options for ```analysis.py```, type ```python3 analysis -h```
+
+## User Interface Demo
+
+Below is some [example usage of our UI](https://nlp-733-dash.herokuapp.com) for specific target queries.
+
+Update the calendar heat maps by selecting targets of interest from the dropdown.
+
+![](./assets/gif/calmaps.gif)
   
+Inspect the sentiment over time by zooming in on periods of interest. Hover over the bars to see the article count for the day 
+and the most polar headline for that day.
+
+![](./assets/gif/timeseries.gif)
+
+Narrow down on the relevant content about each target by using the time slider bar above the data table. Sort the table by 
+publication or sentiment score to track the reasons for a large shift in trends.
+
+![](./assets/gif/data_table.gif)
