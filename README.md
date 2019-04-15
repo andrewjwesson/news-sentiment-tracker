@@ -33,16 +33,17 @@ This must be downloaded manually:
 
 ### fastText for Sentiment Analysis
 
-If using [FastText](https://fasttext.cc/) for sentiment analysis, install the Python module from Facebook Research's 
-repository using ```pip``` as follows.
+If using [fastText](https://fasttext.cc/) for sentiment analysis, a simple ```pip install fasttext``` will not work - this [will pull an older version of the library](https://github.com/facebookresearch/fastText/issues/497). To install the latest version of the Python bindings for fastText, **install using the raw git clone** from Facebook Research repository as follows.
 
     $ git clone https://github.com/facebookresearch/fastText.git
     $ cd fastText
     $ pip3 install .
     
-The fastText library can then be imported into Python using the regular command:
+The fastText library can then be imported into Python using the command:
 
     import fastText
+    
+Note the capitalization of ```T``` in the above import statement (as per the [fastText/python master](https://github.com/facebookresearch/fastText/tree/master/python)). 
 
 ### Sentiment Models
 
@@ -54,8 +55,8 @@ review dataset.
  (the compressed model already exists in ```./models```)
  - **Flair**: Requires a GPU-enabled machine to run, and a trained Flair classifier model 
 (provided at [this GoogleDrive link](https://drive.google.com/open?id=1XQymhmhyXtsU2SawxgzvD5DZocX44JKY)). 
-**NOTE** The trained model is 512 MB in size. The same model can be retrained using the code and data provided in 
-![](./nst/training_and_validation/train.py). We used an NVIDIA P100 GPU with 16 GB of memory for all training experiments. 
+**NOTE** The trained model is 512 MB in size. The same model can be retrained using the code and data provided in the file
+![train.py](./nst/training_and_validation/train.py). We used an NVIDIA P100 GPU with 16 GB of memory for all training experiments. 
  
 ## Usage
 
