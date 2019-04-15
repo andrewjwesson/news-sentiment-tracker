@@ -38,6 +38,7 @@ jmespath==0.9.4
 jsonschema==2.6.0
 jupyter-core==4.4.0
 kiwisolver==1.0.1
+lark-parser==0.7.0
 MarkupSafe==1.1.1
 matplotlib==3.0.3
 mpld3==0.3
