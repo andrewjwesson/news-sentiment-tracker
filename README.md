@@ -60,6 +60,22 @@ review dataset.
  
 ## Usage
 
+### Run index builder
+
+Run the Spark job ```build_index.py```.  Use the following format:
+    
+    spark-submit build_index.py [input csv file] [output directory]
+
+### Run the query engine
+
+After building the index, run the spark job ```query.py```
+  
+    spark-submit query.py [output directory of build_index] [output json file] [queries] ...
+
+For example, 
+
+    spark-submit  index data/example.json "Ryan | Lochte & Rio" "Trump & (President | president) - (Russia | China)" "Shkreli - (Wu | Tang | Ghostface | Killah)" "Samsung & battery & fire"
+
 ### Run sentiment analysis
  
 Run the file ```analysis.py```. An example case for multiple queries using fastText is shown below.
