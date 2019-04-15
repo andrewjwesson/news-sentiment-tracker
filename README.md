@@ -74,7 +74,7 @@ After building the index, run the spark job ```query.py```
 
 For example, 
 
-    spark-submit  index data/example.json "Ryan | Lochte & Rio" "United | Airlines & (Dao | leggings)"
+    spark-submit query.py index data/example.json "Ryan | Lochte & Rio" "United | Airlines & (Dao | leggings)"
 
 ### Run sentiment analysis
  
