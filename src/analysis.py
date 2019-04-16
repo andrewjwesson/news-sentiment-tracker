@@ -121,7 +121,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Perform targeted sentiment analysis on a \
                                      particular entity in a large news dataset using NLP.')
     parser.add_argument('-i', '--inp', type=str, help='Path to news dataset (csv or similar)',
-                        default='../data/all_the_news_v2.csv')
+                        default='../data/all_the_news.csv')
     parser.add_argument('-m', '--method', type=str, help='Sentiment analysis model (textblob, fasttext or flair)',
                         default="fasttext")
     parser.add_argument('-n', '--name', type=str, help='Name query (e.g. name of a person/organization)',
@@ -138,7 +138,7 @@ if __name__ == "__main__":
     method = args.method
     name_query = args.name
     result_path = args.results
-    write_ = bool(args.write)
+    write_ = args.write
     model_path = args.modelfile
 
     # Read in dataset
