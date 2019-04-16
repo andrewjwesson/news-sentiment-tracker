@@ -10,6 +10,11 @@ for filename in csv_files:
     li.append(df)
 
 data = pd.concat(li, axis=0)
-data.columns = ['id', 'title', 'publication', 'author', 'date',
+data.columns = ['idx', 'title', 'publication', 'author', 'date',
                 'year', 'month', 'url', 'content']
-data.to_csv('all_the_news.csv')
+data = data.drop('idx', axis=1)
+data['length'] = data['content'].str.len()
+# Reorder columns as per the components v2 data
+reordered = data[['title', 'author', 'date', 'content',
+                  'year', 'month', 'publication', 'length']]
+reordered.to_csv('all_the_news.csv')
